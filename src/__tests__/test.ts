@@ -45,10 +45,41 @@ test('Valid', () => {
   expect(ParseCNFT('{}')).toBeTruthy();
 });
 
-test('Not Valid', () => {
-  const res = ParseCNFT('{')
-  expect(res?.error?.type).toBe(CNFT_ERROR_TYPES.json);
-});
+describe('JSON tests', () => {
+  it('Invalid json throws json error', () => {
+    const res = ParseCNFT('{')
+    expect(res?.error?.type).toBe(CNFT_ERROR_TYPES.json);
+  });
+
+  it('Empty json throws json error', () => {
+    const res = ParseCNFT('{}')
+    expect(res?.error?.type).toBe(CNFT_ERROR_TYPES.json);
+  });
+})
+
+describe('NFT 721 tag tests', () => {
+  it('Valid 721 tag', () => {
+    const mockedData = {
+      "721": {
+        "ba3afde69bb939ae4439c36d220e6b2686c6d3091bbc763ac0a1679c": {
+            "bit_bot 0x0000": {
+                "image": "ipfs://QmQJfWDun8h6ucvLpm7Z15zNbW3tBCUsgXpkZ8ETCisgm9",
+                "mediaType": "image/svg",
+                "name": "bit_bot 0x0000",
+                "project": "bit_bots",
+            }
+        }
+      }
+    }
+    const res = ParseCNFT(JSON.stringify(mockedData))
+    expect(res?.error?.type).toBe(CNFT_ERROR_TYPES.json);
+  });
+
+  it('Empty json throws json error', () => {
+    const res = ParseCNFT('{}')
+    expect(res?.error?.type).toBe(CNFT_ERROR_TYPES.json);
+  });
+})
 
 test('simpleNft', () => {
   const res = ParseCNFT(JSON.stringify(nftMocks.simpleNft))

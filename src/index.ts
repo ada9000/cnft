@@ -37,16 +37,10 @@ export enum CNFT_ERROR_TYPES {
     cip25 = "cip25"
 }
 
-
-
-export const ParseCNFT = (jsonStr: string) : CNFT => {
-    const cnft:CNFT = {data:null, error:null, warnings: null};
-    
+function validJson(jsonStr: string, cnft:CNFT){
     var json = null
-    // check json
     try {
         json = JSON.parse(jsonStr)
-        console.log(json)
     } catch (e) {
         if(e instanceof SyntaxError){
             cnft.error = {type:CNFT_ERROR_TYPES.json, message:e.message}
@@ -55,8 +49,49 @@ export const ParseCNFT = (jsonStr: string) : CNFT => {
         }
     }
     if(json === null){
-        return cnft;
+        cnft.error = {type:CNFT_ERROR_TYPES.json, message:'Empty json'}
     }
+    return json
+}
+
+function contains721Metadatum(json:JSON, cnft:CNFT){
+    if(!('721' in json)){
+        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Missing 721 metadatum tag"}
+    }
+}
+
+function findPolicyId(json:any, cnft:CNFT){
+    const policyIds = Object.keys(json[721])
+    if(policyIds.length > 1) {
+        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Multiple policies defined"}
+    } else if (policyIds.length < 1){
+        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "No policy defined"}
+    } 
+    return policyIds[0] 
+}
+
+function findAssets(json:any, policyId:string, cnft:CNFT){
+    const assets:Array<CNFT_ASSETS> = []
+    for (const assetName in json[721][policyId]){
+        assets.push(
+            {
+                assetName: assetName,
+                //TODO other assset properties
+                other: json[721][policyId][assetName] // TODO: subtract already used properties
+            }
+        )
+    }
+    if(assets.length < 1){
+        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "No assets defined"}
+    }
+    return assets
+}
+
+export const ParseCNFT = (jsonStr: string) : CNFT => {
+    const cnft:CNFT = {data:null, error:null, warnings: null};
+    
+    const json = validJson(jsonStr, cnft)
+    if(cnft.error) { return cnft }
 
     // TODO: check size...
     if(false){
@@ -65,40 +100,23 @@ export const ParseCNFT = (jsonStr: string) : CNFT => {
     }
 
     // check 721 tag
-    if(!('721' in json)){
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Missing 721 metadatum tag"}
-        return cnft
-    }
+    contains721Metadatum(json, cnft);
+    if(cnft.error) { return cnft }
+    
 
     // check policy
-    const policyIds = Object.keys(json[721])
-    if(policyIds.length > 1) {
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Multiple policies defined"}
-        return cnft;
-    } else if (policyIds.length !== 1){
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "No policy defined"}
-        return cnft;
-    }
-    const policyId = policyIds[0]
-    
+    const policyId = findPolicyId(json, cnft)
+    if(cnft.error) { return cnft }
+        
     // check asssets
-    const assets:Array<CNFT_ASSETS> = []
-    for (const assetName in json[721][policyId]){
-        console.log(`adding asset ${assetName}`)
-        console.log(`with ${json[721][policyId][assetName]}`)
+    const assets = findAssets(json, policyId, cnft)
+    if(cnft.error) { return cnft }
 
-        assets.push(
-            {
-                assetName: assetName,
-                //TODO other assset properties
-                other: json[721][policyId][assetName]
-            }
-        )
-    }
-    if(assets.length < 1){
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "No assets defined"}
-        return cnft;
-    }
+    // check version?? TODO:
+
+    // if version 1 handle version 1...
+
+    // else if version 2 handle version 2...
 
     // return CNFT
     cnft.data = {
@@ -106,8 +124,6 @@ export const ParseCNFT = (jsonStr: string) : CNFT => {
         assets: assets
     }
 
-    console.log(cnft)
-    console.log(cnft.data.assets)
     return cnft;
 };
 
