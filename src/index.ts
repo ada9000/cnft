@@ -14,17 +14,25 @@ export type CNFT_DATA = {
 
 export type CNFT_ASSETS = {
     assetName: string //TODO
-    name?:string
-    image?: string | [string]
+    name:string
+    image: string | [string]
     mediaType?: string
     description?: string
     files?: [CNFT_FILE]
     other?: any
-    onchain: boolean
+    nftType: NFT_TYPE
+    
+}
+
+export enum NFT_TYPE {
+    onchain = "on-chain",
+    offchain = "off-chain",
+    ipfs = "ipfs",
+    hybrid = "hybrid",
 }
 
 export type CNFT_FILE = {
-    name: string
+    name?: string
     mediaType: string
     src: string | [string]
     other?: any
@@ -89,26 +97,100 @@ function findPolicyId(json:any, cnft:CNFT){
     return policyIds[0] 
 }
 
+const isValidUrl = (urlString:string) => {
+    try { 
+        return Boolean(new URL(urlString)); 
+    }
+    catch(e){ 
+        return false; 
+    }
+}
+
 function findAssets(json:any, policyId:string, cnft:CNFT){
     const assets:Array<CNFT_ASSETS> = []
     for (const assetName in json[721][policyId]){
+        var nftType = NFT_TYPE.offchain
+
+        // required fields
+        if (!('image' in json[721][policyId][assetName])){    
+            cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "CIP 25 requires an image tag"}
+            return []
+        }
+        if (!('name' in json[721][policyId][assetName])){    
+            cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "CIP 25 requires a name tag"}
+            return []
+        }
+
         // remove keys from other that are defined in CNFT_ASSETS
         let other = JSON.parse(JSON.stringify(json[721][policyId][assetName]));
         let keysToRemove = ["name", 'image', 'mediaType', 'description', 'files'].forEach((key) => {
-            console.log(key)
             delete other[key]
         })
+
+
+        // check if image is url? if so set type to image
+        const image = json[721][policyId][assetName]['image'];
+
+        if(Array.isArray(image)){
+            // handle on chain
+            nftType = NFT_TYPE.onchain
+
+            // if cant't resolve media type throw error
+            image.forEach((str) => {
+                if(str.length > 64){
+                    cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "image array elements must be 64 characters or less"}
+                    return []
+                }
+            })
+
+            
+        } else if (isValidUrl(image)) {
+            if(image.substr(0,7) === "ipfs://"){
+                nftType = NFT_TYPE.ipfs
+            }
+        } else {
+            cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Invalid image url or data"}
+            return []
+        }
+
+        // find file type
+        if (('files' in json[721][policyId][assetName])){
+
+            const files = json[721][policyId][assetName]['files']
+
+
+            files.forEach((f:CNFT_FILE) => {
+                if(!('name' in f)){
+                    cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "It's recommended to include a name tag"}
+                    return []
+                }
+                if(!('src' in f)){
+                    cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Files require a src tag"}
+                    return []
+                }
+                if(Array.isArray(f['src'])){
+                    if(!('mediaType' in f)){
+                        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Files require a mediaType (that define mime type)"}
+                        return []
+                    }
+                } else if (!isValidUrl(f['src'])){
+                    cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Files src must be a valid url"}
+                    return []
+                }
+            });
+        }
+
         // create CNFT_ASSET
         assets.push(
             {
                 assetName: assetName,
                 name: 'name' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['name'] : null,
-                image: 'image' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['image'] : null,
+                image: image,
                 mediaType: 'mediaType' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['mediaType'] : null,
                 description: 'description' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['description'] : null,
                 files: 'files' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['files'] : null,
                 other: other,
-                onchain: false //TODO
+                nftType: NFT_TYPE.ipfs // TODO
             }
         )
     }
