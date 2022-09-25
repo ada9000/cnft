@@ -7,13 +7,13 @@ export type CNFT = {
 }
 
 export type CNFT_DATA = {
-    policyId: string //TODO
-    assets?: Array<CNFT_ASSETS>
+    policyId: string // TODO
+    assets?: CNFT_ASSETS[]
     version?: nftVersion
 }
 
 export type CNFT_ASSETS = {
-    assetName: string //TODO
+    assetName: string // TODO
     name:string
     image: string | [string]
     mediaType?: string
@@ -57,7 +57,7 @@ export enum CNFT_CIP25_ERRROR {
 }
 
 function validJson(jsonStr: string, cnft:CNFT){
-    var json = null
+    let json = null
     try {
         json = JSON.parse(jsonStr)
     } catch (e) {
@@ -76,7 +76,7 @@ function validJson(jsonStr: string, cnft:CNFT){
 function validMetadataSize(json:JSON, cnft:CNFT){
     const size = new TextEncoder().encode(JSON.stringify(json)).length
     const kB = size / 1024;
-    if (kB > 16){ //TODO: use actual value
+    if (kB > 16){ // TODO: use actual value
         cnft.error = {type:CNFT_ERROR_TYPES.cip25, message:'Metadata too large over 16kB'}
     }
 }
@@ -107,9 +107,9 @@ const isValidUrl = (urlString:string) => {
 }
 
 function findAssets(json:any, policyId:string, cnft:CNFT){
-    const assets:Array<CNFT_ASSETS> = []
+    const assets: CNFT_ASSETS[] = []
     for (const assetName in json[721][policyId]){
-        var nftType = NFT_TYPE.offchain
+        let nftType = NFT_TYPE.offchain
 
         // required fields
         if (!('image' in json[721][policyId][assetName])){    
@@ -122,14 +122,14 @@ function findAssets(json:any, policyId:string, cnft:CNFT){
         }
 
         // remove keys from other that are defined in CNFT_ASSETS
-        let other = JSON.parse(JSON.stringify(json[721][policyId][assetName]));
-        let keysToRemove = ["name", 'image', 'mediaType', 'description', 'files'].forEach((key) => {
+        const other = JSON.parse(JSON.stringify(json[721][policyId][assetName]));
+        const keysToRemove = ["name", 'image', 'mediaType', 'description', 'files'].forEach((key) => {
             delete other[key]
         })
 
 
         // check if image is url? if so set type to image
-        const image = json[721][policyId][assetName]['image'];
+        const image = json[721][policyId][assetName].image;
 
         if(Array.isArray(image)){
             // handle on chain
@@ -156,7 +156,7 @@ function findAssets(json:any, policyId:string, cnft:CNFT){
         // find file type
         if (('files' in json[721][policyId][assetName])){
 
-            const files = json[721][policyId][assetName]['files']
+            const files = json[721][policyId][assetName].files
 
 
             files.forEach((f:CNFT_FILE) => {
@@ -168,12 +168,12 @@ function findAssets(json:any, policyId:string, cnft:CNFT){
                     cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Files require a src tag"}
                     return []
                 }
-                if(Array.isArray(f['src'])){
+                if(Array.isArray(f.src)){
                     if(!('mediaType' in f)){
                         cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Files require a mediaType (that define mime type)"}
                         return []
                     }
-                } else if (!isValidUrl(f['src'])){
+                } else if (!isValidUrl(f.src)){
                     cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Files src must be a valid url"}
                     return []
                 }
