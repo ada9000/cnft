@@ -9,22 +9,29 @@ export type CNFT = {
 export type CNFT_DATA = {
     policyId: string //TODO
     assets?: Array<CNFT_ASSETS>
+    version?: nftVersion
 }
 
 export type CNFT_ASSETS = {
     assetName: string //TODO
     name?:string
     image?: string | [string]
-    mediaType?: string //TODO: set all mime types and test
+    mediaType?: string
     description?: string
-    files?: [any] //TODO
-    version?: nftVersion
+    files?: [CNFT_FILE]
+    other?: any
+    onchain: boolean
+}
+
+export type CNFT_FILE = {
+    name: string
+    mediaType: string
+    src: string | [string]
     other?: any
 }
 
 enum nftVersion {
     version2 = 2,
-    version3 = 3
 }
 
 export type CNFT_ERROR = {
@@ -35,6 +42,10 @@ export type CNFT_ERROR = {
 export enum CNFT_ERROR_TYPES {
     json = "json",
     cip25 = "cip25"
+}
+
+export enum CNFT_CIP25_ERRROR {
+
 }
 
 function validJson(jsonStr: string, cnft:CNFT){
@@ -52,6 +63,14 @@ function validJson(jsonStr: string, cnft:CNFT){
         cnft.error = {type:CNFT_ERROR_TYPES.json, message:'Empty json'}
     }
     return json
+}
+
+function validMetadataSize(json:JSON, cnft:CNFT){
+    const size = new TextEncoder().encode(JSON.stringify(json)).length
+    const kB = size / 1024;
+    if (kB > 16){ //TODO: use actual value
+        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message:'Metadata too large over 16kB'}
+    }
 }
 
 function contains721Metadatum(json:JSON, cnft:CNFT){
@@ -73,11 +92,23 @@ function findPolicyId(json:any, cnft:CNFT){
 function findAssets(json:any, policyId:string, cnft:CNFT){
     const assets:Array<CNFT_ASSETS> = []
     for (const assetName in json[721][policyId]){
+        // remove keys from other that are defined in CNFT_ASSETS
+        let other = JSON.parse(JSON.stringify(json[721][policyId][assetName]));
+        let keysToRemove = ["name", 'image', 'mediaType', 'description', 'files'].forEach((key) => {
+            console.log(key)
+            delete other[key]
+        })
+        // create CNFT_ASSET
         assets.push(
             {
                 assetName: assetName,
-                //TODO other assset properties
-                other: json[721][policyId][assetName] // TODO: subtract already used properties
+                name: 'name' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['name'] : null,
+                image: 'image' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['image'] : null,
+                mediaType: 'mediaType' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['mediaType'] : null,
+                description: 'description' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['description'] : null,
+                files: 'files' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['files'] : null,
+                other: other,
+                onchain: false //TODO
             }
         )
     }
@@ -93,11 +124,8 @@ export const ParseCNFT = (jsonStr: string) : CNFT => {
     const json = validJson(jsonStr, cnft)
     if(cnft.error) { return cnft }
 
-    // TODO: check size...
-    if(false){
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Max nft size ~16kb"}
-        return cnft
-    }
+    validMetadataSize(json, cnft) // TODO: test and validate this
+    if(cnft.error) { return cnft }
 
     // check 721 tag
     contains721Metadatum(json, cnft);
@@ -113,10 +141,9 @@ export const ParseCNFT = (jsonStr: string) : CNFT => {
     if(cnft.error) { return cnft }
 
     // check version?? TODO:
+    // if version 2 handle version 2...
 
-    // if version 1 handle version 1...
-
-    // else if version 2 handle version 2...
+    // TODO: handle CIP 48
 
     // return CNFT
     cnft.data = {
