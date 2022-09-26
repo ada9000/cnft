@@ -1,6 +1,6 @@
 {
   "name": "parse-cnft",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Validate Cardano nft metadata",
   "main": "lib/index.js",
   "types": "lib/index.d.js",
