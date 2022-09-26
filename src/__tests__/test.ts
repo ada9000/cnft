@@ -18,6 +18,24 @@ describe('JSON tests', () => {
     expect(error?.message).toBe("Unexpected token } in JSON at position 67");
   });
 
+  it('Invalid comma (after "TestProject")', () => {
+    const { error } = ParseCNFT(
+      `{
+        "721": {
+            "ba3afde69bb939ae4439c36d220e6b2686c6d3091bbc763ac0a1679c": {
+                "Test0": {
+                    "image": "ipfs://QmQJfWDun8h6ucvLpm7Z15zNbW3tBCUsgXpkZ8ETCisgm9",
+                    "mediaType": "image/svg",
+                    "name": "Albert the absurd",
+                    "project": "TestProject",
+                }
+            }
+        }
+      }`
+    );
+    expect(error?.type).toBe(MetadataErrors.json);
+    expect(error?.message).toBe("Unexpected token } in JSON at position 363");
+  });
 });
 
 describe('NFT 721 tag tests', () => {
@@ -29,7 +47,7 @@ describe('NFT 721 tag tests', () => {
             image: 'ipfs://QmQJfWDun8h6ucvLpm7Z15zNbW3tBCUsgXpkZ8ETCisgm9',
             mediaType: 'image/svg',
             name: 'bit_bot 0x0000',
-            project: 'bit_bots',
+            project: 'bit_bots'
           },
         },
       },
