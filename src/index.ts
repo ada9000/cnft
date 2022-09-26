@@ -1,98 +1,43 @@
 import { version } from "prettier"
+import {Metadata, Asset, MetadataErrors, NftTypes, FileMetadata} from "./types"
 
-export type CNFT = {
-    data: CNFT_DATA | null
-    error: CNFT_ERROR | null
-    warnings: [string] | null
-}
-
-export type CNFT_DATA = {
-    policyId: string // TODO
-    assets?: CNFT_ASSETS[]
-    version?: nftVersion
-}
-
-export type CNFT_ASSETS = {
-    assetName: string // TODO
-    name:string
-    image: string | [string]
-    mediaType?: string
-    description?: string
-    files?: [CNFT_FILE]
-    other?: any
-    nftType: NFT_TYPE
-    
-}
-
-export enum NFT_TYPE {
-    onchain = "on-chain",
-    offchain = "off-chain",
-    ipfs = "ipfs",
-    hybrid = "hybrid",
-}
-
-export type CNFT_FILE = {
-    name?: string
-    mediaType: string
-    src: string | [string]
-    other?: any
-}
-
-enum nftVersion {
-    version2 = 2,
-}
-
-export type CNFT_ERROR = {
-    type: CNFT_ERROR_TYPES
-    message: string
-}
-
-export enum CNFT_ERROR_TYPES {
-    json = "json",
-    cip25 = "cip25"
-}
-
-export enum CNFT_CIP25_ERRROR {
-
-}
-
-function validJson(jsonStr: string, cnft:CNFT){
+function validJson(jsonStr: string, metadata:Metadata){
     let json = null
     try {
         json = JSON.parse(jsonStr)
     } catch (e) {
         if(e instanceof SyntaxError){
-            cnft.error = {type:CNFT_ERROR_TYPES.json, message:e.message}
+            metadata.error = {type:MetadataErrors.json, message:e.message}
         } else {
             throw e
         }
     }
     if(json === null){
-        cnft.error = {type:CNFT_ERROR_TYPES.json, message:'Empty json'}
+        metadata.error = {type:MetadataErrors.json, message:'Empty json'}
     }
     return json
 }
 
-function validMetadataSize(json:JSON, cnft:CNFT){
+function validMetadataSize(json:JSON, cnft:Metadata){
     const size = new TextEncoder().encode(JSON.stringify(json)).length
     const kB = size / 1024;
     if (kB > 16){ // TODO: use actual value
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message:'Metadata too large over 16kB'}
+        cnft.error = {type:MetadataErrors.cip25, message:'Metadata too large over 16kB'}
     }
 }
 
-function contains721Metadatum(json:JSON, cnft:CNFT){
+function contains721Metadatum(json:JSON, cnft:Metadata){
     if(!('721' in json)){
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Missing 721 metadatum tag"}
+        cnft.error = {type:MetadataErrors.cip25, message: "Missing 721 metadatum tag"}
     }
 }
 
-function findPolicyId(json:any, cnft:CNFT){
+function findPolicyId(json:any, cnft:Metadata){
     const policyIds = Object.keys(json[721])
     if(policyIds.length > 1) {
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Multiple policies defined"}
+        cnft.error = {type:MetadataErrors.cip25, message: "Multiple policies defined"}
     } else if (policyIds.length < 1){
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "No policy defined"}
+        cnft.error = {type:MetadataErrors.cip25, message: "No policy defined"}
     } 
     return policyIds[0] 
 }
@@ -106,18 +51,18 @@ const isValidUrl = (urlString:string) => {
     }
 }
 
-function findAssets(json:any, policyId:string, cnft:CNFT){
-    const assets: CNFT_ASSETS[] = []
+function findAssets(json:any, policyId:string, cnft:Metadata){
+    const assets: Asset[] = []
     for (const assetName in json[721][policyId]){
-        let nftType = NFT_TYPE.offchain
+        let nftType = NftTypes.offchain
 
         // required fields
         if (!('image' in json[721][policyId][assetName])){    
-            cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "CIP 25 requires an image tag"}
+            cnft.error = {type:MetadataErrors.cip25, message: "CIP 25 requires an image tag"}
             return []
         }
         if (!('name' in json[721][policyId][assetName])){    
-            cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "CIP 25 requires a name tag"}
+            cnft.error = {type:MetadataErrors.cip25, message: "CIP 25 requires a name tag"}
             return []
         }
 
@@ -133,12 +78,12 @@ function findAssets(json:any, policyId:string, cnft:CNFT){
 
         if(Array.isArray(image)){
             // handle on chain
-            nftType = NFT_TYPE.onchain
+            nftType = NftTypes.onchain
 
             // if cant't resolve media type throw error
             image.forEach((str) => {
                 if(str.length > 64){
-                    cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "image array elements must be 64 characters or less"}
+                    cnft.error = {type:MetadataErrors.cip25, message: "image array elements must be 64 characters or less"}
                     return []
                 }
             })
@@ -146,10 +91,10 @@ function findAssets(json:any, policyId:string, cnft:CNFT){
             
         } else if (isValidUrl(image)) {
             if(image.substr(0,7) === "ipfs://"){
-                nftType = NFT_TYPE.ipfs
+                nftType = NftTypes.ipfs
             }
         } else {
-            cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Invalid image url or data"}
+            cnft.error = {type:MetadataErrors.cip25, message: "Invalid image url or data"}
             return []
         }
 
@@ -159,22 +104,22 @@ function findAssets(json:any, policyId:string, cnft:CNFT){
             const files = json[721][policyId][assetName].files
 
 
-            files.forEach((f:CNFT_FILE) => {
+            files.forEach((f:FileMetadata) => {
                 if(!('name' in f)){
-                    cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "It's recommended to include a name tag"}
+                    cnft.error = {type:MetadataErrors.cip25, message: "It's recommended to include a name tag"}
                     return []
                 }
                 if(!('src' in f)){
-                    cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Files require a src tag"}
+                    cnft.error = {type:MetadataErrors.cip25, message: "Files require a src tag"}
                     return []
                 }
                 if(Array.isArray(f.src)){
                     if(!('mediaType' in f)){
-                        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Files require a mediaType (that define mime type)"}
+                        cnft.error = {type:MetadataErrors.cip25, message: "Files require a mediaType (that define mime type)"}
                         return []
                     }
                 } else if (!isValidUrl(f.src)){
-                    cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "Files src must be a valid url"}
+                    cnft.error = {type:MetadataErrors.cip25, message: "Files src must be a valid url"}
                     return []
                 }
             });
@@ -190,18 +135,18 @@ function findAssets(json:any, policyId:string, cnft:CNFT){
                 description: 'description' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['description'] : null,
                 files: 'files' in json[721][policyId][assetName] ?  json[721][policyId][assetName]['files'] : null,
                 other: other,
-                nftType: NFT_TYPE.ipfs // TODO
+                nftType: NftTypes.ipfs // TODO
             }
         )
     }
     if(assets.length < 1){
-        cnft.error = {type:CNFT_ERROR_TYPES.cip25, message: "No assets defined"}
+        cnft.error = {type:MetadataErrors.cip25, message: "No assets defined"}
     }
     return assets
 }
 
-export const ParseCNFT = (jsonStr: string) : CNFT => {
-    const cnft:CNFT = {data:null, error:null, warnings: null};
+export const ParseCNFT = (jsonStr: string) : Metadata => {
+    const cnft:Metadata = {data:null, error:null};
     
     const json = validJson(jsonStr, cnft)
     if(cnft.error) { return cnft }

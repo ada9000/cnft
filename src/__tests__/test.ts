@@ -1,15 +1,15 @@
-import { ParseCNFT, CNFT_ERROR_TYPES, NFT_TYPE, CNFT_CIP25_ERRROR } from '../index';
+import { ParseCNFT } from '../index';
+import {MetadataErrors, NftTypes} from '../types'
 
 describe('JSON tests', () => {
   it('Invalid json throws json error', () => {
-    const res = ParseCNFT('{')
-    expect(res?.error?.type).toBe(CNFT_ERROR_TYPES.json);
+    const {error} = ParseCNFT('{')
+    expect(error?.type).toBe(MetadataErrors.json);
   });
 
   it('Empty json throws missing metadatum error', () => {
-    const res = ParseCNFT('{}')
-    console.log(res.error)
-    expect(res?.error?.type).toBe(CNFT_ERROR_TYPES.cip25);
+    const {error} = ParseCNFT('{}')
+    expect(error?.type).toBe(MetadataErrors.cip25);
   });
 })
 
@@ -28,8 +28,8 @@ describe('NFT 721 tag tests', () => {
             }
         }
     }
-    const res = ParseCNFT(JSON.stringify(mockedNFT))
-    expect(res?.error).toBeNull();
+    const {error} = ParseCNFT(JSON.stringify(mockedNFT))
+    expect(error).toBeNull();
   });
 
   it('Non 721 metadatum tag throws CIP error', () => {
@@ -46,8 +46,8 @@ describe('NFT 721 tag tests', () => {
             }
         }
     }
-    const res = ParseCNFT(JSON.stringify(mockedNFT))
-    expect(res?.error?.type).toBe(CNFT_ERROR_TYPES.cip25);
+    const {error} = ParseCNFT(JSON.stringify(mockedNFT))
+    expect(error?.type).toBe(MetadataErrors.cip25);
   });
 })
 
@@ -68,8 +68,8 @@ describe('Error checks', () => {
         }
       }
     }
-    const res = ParseCNFT(JSON.stringify(mockedNFT))
-    expect(res?.error?.type).toBe(CNFT_ERROR_TYPES.cip25)
+    const {error} = ParseCNFT(JSON.stringify(mockedNFT))
+    expect(error?.type).toBe(MetadataErrors.cip25)
   });
 
   it('onchain tag check', () => {
@@ -86,13 +86,8 @@ describe('Error checks', () => {
             }
         }
     }
-    const res = ParseCNFT(JSON.stringify(mockedNFT))
-    if(res?.data?.assets){
-      expect(res?.data?.assets[0].nftType).toBe(NFT_TYPE.ipfs);
-    } else {
-      throw new Error("Undefined assset");
-    }
-
+    const {data} = ParseCNFT(JSON.stringify(mockedNFT))
+    expect(data?.assets[0]?.nftType).toBe(NftTypes.ipfs);
   });
 
 })
@@ -119,18 +114,17 @@ describe('Existing nft project tests', () => {
         }
       }
     }
-    const res = ParseCNFT(JSON.stringify(mockedNFT))
-    expect(res.error).toBeNull()
-    expect(res?.data?.policyId).toBe("f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a");
-    console.log(res?.data?.assets)
-    if(res?.data?.assets){
-      expect(res?.data?.assets[0]).toBeDefined()
-      expect(res?.data?.assets[0]?.assetName).toBe("ada9000");
-      expect(res?.data?.assets[0]?.name).toBe("$ada9000");
-      expect(res?.data?.assets[0]?.image).toBe("ipfs://QmaZ56m6ScGyzpYnGdSbp3z6jkMU7UZSuy7Azjnw8gzQMm");
-      expect(res?.data?.assets[0]?.other?.website).toBe("https://adahandle.com");
-      expect(res?.data?.assets[0]?.other?.name).toBeUndefined();
-      expect(res?.data?.assets[0].nftType).toBe(NFT_TYPE.ipfs);
+    const {data, error} = ParseCNFT(JSON.stringify(mockedNFT))
+    expect(error).toBeNull()
+    expect(data?.policyId).toBe("f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a");
+    if(data?.assets){
+      expect(data?.assets[0]).toBeDefined()
+      expect(data?.assets[0]?.assetName).toBe("ada9000");
+      expect(data?.assets[0]?.name).toBe("$ada9000");
+      expect(data?.assets[0]?.image).toBe("ipfs://QmaZ56m6ScGyzpYnGdSbp3z6jkMU7UZSuy7Azjnw8gzQMm");
+      expect(data?.assets[0]?.other?.website).toBe("https://adahandle.com");
+      expect(data?.assets[0]?.other?.name).toBeUndefined();
+      expect(data?.assets[0].nftType).toBe(NftTypes.ipfs);
     } else {
       throw new Error("Undefined assset");
     }
@@ -371,19 +365,14 @@ describe('Existing nft project tests', () => {
         }
       }
     }
-    const res = ParseCNFT(JSON.stringify(mockedNFT))
-    expect(res.error).toBeNull()
-    expect(res?.data?.policyId).toBe("4bfa713fc28cdd2d5e2adb518ef1265f715e39ee5af0f7be14bfa8bf");
-    console.log(res?.data?.assets)
-    if(res?.data?.assets){
-      expect(res?.data?.assets[0]).toBeDefined()
-      expect(res?.data?.assets[0]?.assetName).toBe("CTB02067");
-      expect(res?.data?.assets[0]?.other?.name).toBeUndefined();
-      expect(res?.data?.assets[0]?.name).toBe("CardanoTrees Bonsai 02067");
-      expect(res?.data?.assets[0]?.mediaType).toBe("image/svg+xml");
-    } else {
-      throw new Error("Undefined assset");
-    }
+    const {data, error} = ParseCNFT(JSON.stringify(mockedNFT))
+    expect(error).toBeNull()
+    expect(data?.policyId).toBe("4bfa713fc28cdd2d5e2adb518ef1265f715e39ee5af0f7be14bfa8bf");
+    console.log(data?.assets)
+    expect(data?.assets[0]).toBeDefined()
+    expect(data?.assets[0]?.assetName).toBe("CTB02067");
+    expect(data?.assets[0]?.other?.name).toBeUndefined();
+    expect(data?.assets[0]?.name).toBe("CardanoTrees Bonsai 02067");
+    expect(data?.assets[0]?.mediaType).toBe("image/svg+xml");
   });
-
 })
