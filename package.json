@@ -1,8 +1,9 @@
 {
   "name": "parse-cnft",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "1.0.1",
+  "description": "Validate Cardano nft metadata",
+  "main": "lib/index.js",
+  "types": "lib/index.d.js",
   "scripts": {
     "test": "jest --config jestconfig.json",
     "build": "tsc",
@@ -13,8 +14,8 @@
     "type": "git",
     "url": "git+https://github.com/ada9000/parseCNFT.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["Cardano","CNFT","NFT","NFT Metadata"],
+  "author": "jack-0",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/ada9000/parseCNFT/issues"
