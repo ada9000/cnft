@@ -17,7 +17,7 @@ const metadataJsonString = `{
                 "image": "ipfs://QmQJfWDun8h6ucvLpm7Z15zNbW3tBCUsgXpkZ8ETCisgm9",
                 "mediaType": "image/svg",
                 "name": "bit_bot 0x0000",
-                "project": "bit_bots",
+                "project": "bit_bots"
             }
         }
     }
