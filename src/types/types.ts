@@ -9,7 +9,7 @@ export type Data = {
   policyId: string;
   assets: Asset[];
   version?: NftVersions;
-  ext?: [string]; //TODO: based on CIP 49 - which is a work in progress
+  ext?: [string]; // TODO: based on CIP 49 - which is a work in progress
 };
 
 // Assets - Each asset is an NFT

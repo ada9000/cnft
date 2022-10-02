@@ -5,10 +5,8 @@ import { isValidUrl } from '../utils/utils';
 /** @internal */
 export const validMetadataSize = (json: JSON): MetadataError | null => {
   const maxTxSize = 16384; // bytes
-  let error: MetadataError | null = null;
   const bytes = new TextEncoder().encode(JSON.stringify(json)).length;
-  //const kB = size / 1024;
-  if (bytes >= maxTxSize) {
+  if (bytes > maxTxSize) {
     return { type: MetadataErrors.cip25, message: `Metadata size is '${bytes}' maxTxSize is '${maxTxSize}'` };
   }
   return null;
@@ -49,7 +47,8 @@ export const findAssets = (json: any, policyId: string): { assets: Asset[]; erro
   const assets: Asset[] = [];
   let error: MetadataError | null = null;
 
-  for (const assetName in json[721][policyId]) {
+  const assetNames = Object.keys(json[721][policyId]);
+  assetNames.forEach((assetName) => {
     let nftType = NftTypes.offchain;
 
     // required fields
@@ -72,13 +71,11 @@ export const findAssets = (json: any, policyId: string): { assets: Asset[]; erro
     const image = json[721][policyId][assetName].image;
 
     if (Array.isArray(image)) {
-      console.log('image is array');
       // handle on chain
       nftType = NftTypes.onchain;
 
       // if cant't resolve media type throw error
       image.forEach((str: string) => {
-        console.log(str.length);
         if (str.length > 64) {
           error = { type: MetadataErrors.cip25, message: 'image array elements must be 64 characters or less' };
           return { assets, error };
@@ -120,17 +117,16 @@ export const findAssets = (json: any, policyId: string): { assets: Asset[]; erro
 
     // create CNFT_ASSET
     assets.push({
-      assetName: assetName,
-      name: 'name' in json[721][policyId][assetName] ? json[721][policyId][assetName]['name'] : null,
-      image: image,
-      mediaType: 'mediaType' in json[721][policyId][assetName] ? json[721][policyId][assetName]['mediaType'] : null,
-      description:
-        'description' in json[721][policyId][assetName] ? json[721][policyId][assetName]['description'] : null,
-      files: 'files' in json[721][policyId][assetName] ? json[721][policyId][assetName]['files'] : null,
-      other: other,
+      assetName,
+      name: 'name' in json[721][policyId][assetName] ? json[721][policyId][assetName].name : null,
+      image,
+      mediaType: 'mediaType' in json[721][policyId][assetName] ? json[721][policyId][assetName].mediaType : null,
+      description: 'description' in json[721][policyId][assetName] ? json[721][policyId][assetName].description : null,
+      files: 'files' in json[721][policyId][assetName] ? json[721][policyId][assetName].files : null,
+      other,
       nftType: NftTypes.ipfs, // TODO
     });
-  }
+  });
   if (assets.length < 1) {
     error = { type: MetadataErrors.cip25, message: 'No assets defined' };
     return { assets, error };

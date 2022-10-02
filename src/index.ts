@@ -59,8 +59,8 @@ export const ParseCNFT = (jsonStr: string): Metadata => {
 
   // return CNFT
   cnft.data = {
-    policyId: policyId,
-    assets: assets,
+    policyId,
+    assets,
   };
 
   return cnft;
