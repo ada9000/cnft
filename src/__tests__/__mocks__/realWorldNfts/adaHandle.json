@@ -1,0 +1,20 @@
+{
+  "721": {
+    "f0ff48bbb7bbe9d59a40f1ce90e9e9d0ff5002ec48f232b49ca0fb9a": {
+      "ada9000": {
+        "augmentations": [],
+        "core": {
+          "handleEncoding": "utf-8",
+          "og": 0,
+          "prefix": "$",
+          "termsofuse": "https://adahandle.com/tou",
+          "version": 0
+        },
+        "description": "The Handle Standard",
+        "image": "ipfs://QmaZ56m6ScGyzpYnGdSbp3z6jkMU7UZSuy7Azjnw8gzQMm",
+        "name": "$ada9000",
+        "website": "https://adahandle.com"
+      }
+    }
+  }
+}

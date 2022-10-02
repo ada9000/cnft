@@ -396,6 +396,15 @@ describe('Existing nft project tests', () => {
   });
 });
 
+describe('Handle nft too large', () => {
+  it('too big', () => {
+    const mockedNFT = require('./__mocks__/largeAsset.json');
+    const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
+    //expect(error?.type).toBe(MetadataErrors.cip25);
+    expect(error?.message).toBe(null);
+  });
+});
+
 describe('Handle "ext" tag (extensions)', () => {
   it('handle cip48', () => {
     const mockedNFT = {
