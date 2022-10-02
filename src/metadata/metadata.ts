@@ -1,7 +1,7 @@
 import { Asset, FileMetadata, MetadataError, MetadataErrors, NftTypes } from '../types/types';
 import { isValidUrl } from '../utils/utils';
 
-// checks json object is not larger than the metadata size limit
+// checks json object is not larger than the metadata size limit (note disk size can vary due to whitespace)
 /** @internal */
 export const validMetadataSize = (json: JSON): MetadataError | null => {
   const maxTxSize = 16384; // bytes
