@@ -1,5 +1,5 @@
 import { ParseCNFT } from '../index';
-import { MetadataErrors, NftTypes } from '../types';
+import { MetadataErrors, NftTypes } from '../types/types';
 
 describe('JSON tests', () => {
   it('Invalid json throws json error', () => {
@@ -15,7 +15,7 @@ describe('JSON tests', () => {
   it('Unexpected token at pos 67', () => {
     const { error } = ParseCNFT('{"721":{"ba3afde69bb939ae4439c36d220e6b2686c6d3091bbc763ac0a1679c":}}');
     expect(error?.type).toBe(MetadataErrors.json);
-    expect(error?.message).toBe("Unexpected token } in JSON at position 67");
+    expect(error?.message).toBe('Unexpected token } in JSON at position 67');
   });
 
   it('Invalid comma (after "TestProject")', () => {
@@ -31,10 +31,10 @@ describe('JSON tests', () => {
                 }
             }
         }
-      }`
+      }`,
     );
     expect(error?.type).toBe(MetadataErrors.json);
-    expect(error?.message).toBe("Unexpected token } in JSON at position 363");
+    expect(error?.message).toBe('Unexpected token } in JSON at position 363');
   });
 });
 
@@ -47,7 +47,7 @@ describe('NFT 721 tag tests', () => {
             image: 'ipfs://QmQJfWDun8h6ucvLpm7Z15zNbW3tBCUsgXpkZ8ETCisgm9',
             mediaType: 'image/svg',
             name: 'bit_bot 0x0000',
-            project: 'bit_bots'
+            project: 'bit_bots',
           },
         },
       },
@@ -388,11 +388,40 @@ describe('Existing nft project tests', () => {
     const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
     expect(error).toBeNull();
     expect(data?.policyId).toBe('4bfa713fc28cdd2d5e2adb518ef1265f715e39ee5af0f7be14bfa8bf');
-    console.log(data?.assets);
     expect(data?.assets[0]).toBeDefined();
     expect(data?.assets[0]?.assetName).toBe('CTB02067');
     expect(data?.assets[0]?.other?.name).toBeUndefined();
     expect(data?.assets[0]?.name).toBe('CardanoTrees Bonsai 02067');
     expect(data?.assets[0]?.mediaType).toBe('image/svg+xml');
+  });
+});
+
+describe('Handle "ext" tag (extensions)', () => {
+  it('handle cip48', () => {
+    const mockedNFT = {
+      '721': {
+        ext: ['cip48'],
+        ba3afde69bb939ae4439c36d220e6b2686c6d3091bbc763ac0a1679c: {
+          'bit_bot 0x0000': {
+            image: 'bit_bot 0x0000',
+            refs: [
+              {
+                name: 'bit_bot 0x0000',
+                mediaType: 'image/svg+xml;utf8',
+                src: ['payloadA', 'payloadB'],
+              },
+            ],
+            name: 'bit_bot 0x0000',
+            project: 'bit_bots',
+          },
+        },
+      },
+    };
+    const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
+    expect(error).toBeNull();
+    if (!data?.ext) {
+      throw new Error('ext should be defined');
+    }
+    expect(Object.keys(data?.ext)).toContain('cip48');
   });
 });
