@@ -1,4 +1,13 @@
-import { Asset, FileMetadata, MetadataError, MetadataErrors, NftTypes } from '../types/types';
+import {
+  Asset,
+  FileMetadata,
+  MetadataError,
+  MetadataErrors,
+  NftTypes,
+  NftExtensions,
+  NftVersions,
+  References,
+} from '../types/types';
 import { isValidUrl } from '../utils/utils';
 
 // checks json object is not larger than the metadata size limit (note disk size can vary due to whitespace)
@@ -41,15 +50,76 @@ export const findPolicyId = (json: any): { policyId: string | null; error: Metad
   return { policyId, error };
 };
 
+// find and return version if it exists
+/** @internal */
+export const findVersion = (json: any): { version: number | undefined; error: MetadataError | null } => {
+  let version: number | undefined = undefined;
+  let error: MetadataError | null = null;
+  const root721Tags = Object.keys(json[721]);
+  // check there is only one policy
+  if (root721Tags.includes('version')) {
+    if (Object.values(NftVersions).includes(json[721].version)) {
+      return { version, error };
+    } else {
+      error = {
+        type: MetadataErrors.cip25,
+        message: `version '${json[721].version} is invalid. Known versions '${JSON.stringify(NftVersions)}'`,
+      };
+      return { version, error };
+    }
+  }
+  return { version, error };
+};
+
+// find and return extensions if they exists
+/** @internal */
+export const findExtensions = (json: any): { ext: [string] | undefined; error: MetadataError | null } => {
+  let ext: [string] | undefined = undefined;
+  let error: MetadataError | null = null;
+  const root721Tags = Object.keys(json[721]);
+  // check there is only one policy
+  if (root721Tags.includes('ext')) {
+    // check ext is an array
+    if (!Array.isArray(json[721].ext)) {
+      error = {
+        type: MetadataErrors.cip25,
+        message: `ext is a string array not ${typeof json[721].ext}'`,
+      };
+      return { ext, error };
+    }
+    // check each array element to ensure it's a valid extension
+    json[721].ext.forEach((extItem: string) => {
+      if (!NftExtensions.includes(extItem)) {
+        error = {
+          type: MetadataErrors.cip25,
+          message: `ext '${extItem}' is a invalid extension. Known extensions '${JSON.stringify(NftExtensions)}'`,
+        };
+        return { ext, error };
+      }
+    });
+    //console.error(json[721].ext);
+    ext = json[721].ext;
+  }
+  return { ext, error };
+};
+
 // finds assets (aka NFTs) within a JSON object given a policyId
 /** @internal */
-export const findAssets = (json: any, policyId: string): { assets: Asset[]; error: MetadataError | null } => {
+export const findAssets = (
+  json: any,
+  policyId: string,
+  ext: [string] | null = null,
+): { assets: Asset[]; error: MetadataError | null } => {
   const assets: Asset[] = [];
   let error: MetadataError | null = null;
+  let references: [References] | undefined = undefined;
 
   const assetNames = Object.keys(json[721][policyId]);
   assetNames.forEach((assetName) => {
     let nftType = NftTypes.offchain;
+
+    // CIP-0048 check
+    const usingCip48 = ext?.includes('cip48');
 
     // required fields
     if (!('image' in json[721][policyId][assetName])) {
@@ -63,7 +133,9 @@ export const findAssets = (json: any, policyId: string): { assets: Asset[]; erro
 
     // remove keys from other that are defined in CNFT_ASSETS
     const other = JSON.parse(JSON.stringify(json[721][policyId][assetName]));
-    const keysToRemove = ['name', 'image', 'mediaType', 'description', 'files'].forEach((key) => {
+    const keysToRemove = ['name', 'image', 'mediaType', 'description', 'files'];
+
+    keysToRemove.forEach((key) => {
       delete other[key];
     });
 
@@ -85,9 +157,84 @@ export const findAssets = (json: any, policyId: string): { assets: Asset[]; erro
       if (image.substr(0, 7) === 'ipfs://') {
         nftType = NftTypes.ipfs;
       }
-    } else {
-      error = { type: MetadataErrors.cip25, message: 'Invalid image url or data' };
+    } else if (!usingCip48) {
+      error = { type: MetadataErrors.cip25, message: 'Invalid image property' };
       return { assets, error };
+    }
+
+    // handle cip48
+    if (usingCip48) {
+      if ('refs' in json[721][policyId][assetName]) {
+        const refs = json[721][policyId][assetName].refs;
+
+        let foundRefForAsset = false;
+        // check each ref is valid
+        refs.forEach((ref: References) => {
+          if (ref.name === assetName) {
+            foundRefForAsset = true;
+          }
+
+          // check required properties exist
+          if (!ref.mediaType) {
+            error = {
+              type: MetadataErrors.cip48,
+              message: `CIP48 requires mediaType property. Asset '${assetName}' is missing mediaType`,
+            };
+            return { assets, error };
+          }
+          if (!ref.src) {
+            error = {
+              type: MetadataErrors.cip48,
+              message: `CIP48 requires src property array. Asset '${assetName}' is missing src array`,
+            };
+            return { assets, error };
+          }
+
+          //TODO: check valid types if defined
+
+          // set default type to current policy if not defined
+          if (!ref.type) {
+            refs.type = 'policy';
+            refs.target = policyId;
+          }
+          // check valid src array
+          if (Array.isArray(ref.src)) {
+            ref.src.forEach((srcRef: string) => {
+              if (srcRef.length > 64) {
+                error = {
+                  type: MetadataErrors.cip48,
+                  message: `CIP48 asset '${assetName}' has a src element larger than 64 bytes '${srcRef}'`,
+                };
+                return { assets, error };
+              }
+            });
+          } else {
+            error = {
+              type: MetadataErrors.cip48,
+              message: `CIP48 asset '${assetName} src type is not an array'`,
+            };
+            return { assets, error };
+          }
+          if (error) {
+            return { assets, error };
+          }
+        });
+
+        if (!foundRefForAsset) {
+          error = {
+            type: MetadataErrors.cip48,
+            message: `No reference name matches the asset name '${assetName}'. 
+          Ensure at least one 'refs' property contains a name tag that matches the asset name`,
+          };
+          return { assets, error };
+        }
+      } else {
+        error = {
+          type: MetadataErrors.cip48,
+          message: `CIP48 requires a refs property for each asset. '${assetName}' is missing refs`,
+        };
+        return { assets, error };
+      }
     }
 
     // find file type
@@ -125,6 +272,7 @@ export const findAssets = (json: any, policyId: string): { assets: Asset[]; erro
       files: 'files' in json[721][policyId][assetName] ? json[721][policyId][assetName].files : null,
       other,
       nftType: NftTypes.ipfs, // TODO
+      references,
     });
   });
   if (assets.length < 1) {

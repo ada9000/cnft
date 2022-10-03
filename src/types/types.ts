@@ -8,7 +8,7 @@ export type Metadata = {
 export type Data = {
   policyId: string;
   assets: Asset[];
-  version?: NftVersions;
+  version?: number;
   ext?: [string]; // TODO: based on CIP 49 - which is a work in progress
 };
 
@@ -22,14 +22,18 @@ export type Asset = {
   files?: [FileMetadata];
   other?: any;
   nftType: NftTypes;
-  references?: References;
+  references?: [References];
 };
 
 // on-chain reference
 export type References = {
-  type: 'policy' | 'txhash';
-  target: string;
+  // core ref types
+  name: string;
+  mediaType: string;
   src: [string];
+  // utility to help find payloads
+  type: { policy: string } | { txhash: [string] };
+  target: string;
 };
 
 // File metadata - used to define more detailed files
@@ -50,9 +54,8 @@ export enum NftTypes {
 }
 
 // nft versions currently we have version 1 which is default and version 2
-enum NftVersions {
-  v2 = 2,
-}
+export const NftVersions = [2];
+export const NftExtensions = ['cip48'];
 
 // Metadata Error, returned on error contains a error type and a descriptive message
 export type MetadataError = {
@@ -64,4 +67,5 @@ export type MetadataError = {
 export enum MetadataErrors {
   json = 'json',
   cip25 = 'cip25',
+  cip48 = 'cip48',
 }

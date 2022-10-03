@@ -1,5 +1,5 @@
 import { ParseCNFT } from '../index';
-import { MetadataErrors, NftTypes } from '../types/types';
+import { MetadataErrors, NftExtensions, NftTypes } from '../types/types';
 
 describe('JSON tests', () => {
   it('Invalid json throws json error', () => {
@@ -159,6 +159,26 @@ describe('Handle "ext" tag (extensions)', () => {
     if (!data?.ext) {
       throw new Error('ext should be defined');
     }
-    expect(Object.keys(data?.ext)).toContain('cip48');
+    expect(data?.ext).toContain('cip48');
+  });
+});
+
+describe('refactor', () => {
+  it('no image but contains files', () => {
+    const mockedNFT = require('./__mocks__/errorNfts/noImagePropButFiles.json');
+    console.log(JSON.stringify(mockedNFT));
+    const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
+    expect(error?.type).toBe(MetadataErrors.cip25);
+  });
+
+  it('ref test 0', () => {
+    const mockedNFT = require('./__mocks__/referenceAndPayloads/ext48.json');
+    console.log(JSON.stringify(mockedNFT));
+    const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
+    console.log(error);
+    if (!data?.ext) {
+      throw new Error('ext should be defined');
+    }
+    expect(data?.ext[0]).toBe('cip48');
   });
 });

@@ -1,7 +1,14 @@
 import { version } from 'prettier';
 import { Metadata, Asset, MetadataErrors, NftTypes, FileMetadata, MetadataError } from './types/types';
 import { validJson, isValidUrl } from './utils/utils';
-import { validMetadataSize, contains721Metadatum, findPolicyId, findAssets } from './metadata/metadata';
+import {
+  validMetadataSize,
+  contains721Metadatum,
+  findPolicyId,
+  findAssets,
+  findVersion,
+  findExtensions,
+} from './metadata/metadata';
 
 export const ParseCNFT = (jsonStr: string): Metadata => {
   const cnft: Metadata = { data: null, error: null };
@@ -44,8 +51,22 @@ export const ParseCNFT = (jsonStr: string): Metadata => {
     return cnft;
   }
 
+  // find versions
+  const { version, error: versionError } = findVersion(json);
+  cnft.error = versionError;
+  if (cnft.error) {
+    return cnft;
+  }
+
+  // find extensions
+  const { ext, error: extError } = findExtensions(json);
+  cnft.error = extError;
+  if (cnft.error) {
+    return cnft;
+  }
+
   // find assets
-  const { assets, error: assetError } = findAssets(json, policyId);
+  const { assets, error: assetError } = findAssets(json, policyId, ext);
   cnft.error = assetError;
   if (cnft.error) {
     return cnft;
@@ -61,6 +82,8 @@ export const ParseCNFT = (jsonStr: string): Metadata => {
   cnft.data = {
     policyId,
     assets,
+    version,
+    ext,
   };
 
   return cnft;
