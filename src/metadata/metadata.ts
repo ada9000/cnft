@@ -200,6 +200,10 @@ export const findAssets = (
     // CIP-0048 check
     const usingCip48 = ext?.includes('cip48');
 
+    if (usingCip48 && assetName === 'p') {
+      return; // return as p is reserved word and not an asset?
+    }
+
     // required fields
     if (!('image' in json[721][policyId][assetName])) {
       error = { type: MetadataErrors.cip25, message: 'CIP 25 requires an image tag' };

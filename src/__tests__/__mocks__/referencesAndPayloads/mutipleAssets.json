@@ -1,0 +1,49 @@
+{
+  "721": {
+    "ext": ["cip48"],
+    "00000000000000000000000000000000000000000000000000000000": {
+      "RedCircle": {
+        "name": "RedCircle",
+        "image": "RedCircle",
+        "refs": [
+          {
+            "mediaType": "image/svg+xml;utf8",
+            "name": "RedCircle",
+            "src": ["r0", "r1", "r2", "r", "r3"]
+          }
+        ]
+      },
+      "GreenCircle": {
+        "name": "GreenCircle",
+        "image": "GreenCircle",
+        "refs": [
+          {
+            "mediaType": "image/svg+xml;utf8",
+            "name": "GreenCircle",
+            "src": ["r0", "r1", "r2", "g", "r3"]
+          }
+        ]
+      },
+      "BlueCircle": {
+        "name": "BlueCircle",
+        "image": "BlueCircle",
+        "refs": [
+          {
+            "mediaType": "image/svg+xml;utf8",
+            "name": "BlueCircle",
+            "src": ["r0", "r1", "r2", "b", "r3"]
+          }
+        ]
+      },
+      "p": {
+        "r0": "<svg viewBox=\"0 0 100 100\" ",
+        "r1": "xmlns=\"http://www.w3.org/2000/svg\">",
+        "r2": "<circle cx=\"50\" cy=\"50\" r=\"50\" fill=\"",
+        "r": "red",
+        "b": "blue",
+        "g": "green",
+        "r3": "\"/> </svg>"
+      }
+    }
+  }
+}

@@ -161,28 +161,11 @@ describe('Handle "ext" tag (extensions)', () => {
     }
     expect(data?.ext).toContain('cip48');
   });
-});
 
-describe('refactor', () => {
-  it('no image but contains files', () => {
+  it('No image tag returns error, when files', () => {
     const mockedNFT = require('./__mocks__/errorNfts/noImagePropButFiles.json');
     console.log(JSON.stringify(mockedNFT));
     const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
     expect(error?.type).toBe(MetadataErrors.cip25);
-  });
-
-  it('ref test 0', () => {
-    const mockedNFT = require('./__mocks__/referenceAndPayloads/ext48.json');
-    console.log(JSON.stringify(mockedNFT));
-    const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
-    if (!data?.ext) throw new Error('ext should be defined');
-    expect(data?.ext[0]).toBe('cip48');
-
-    if (!data.assets[0].references) throw new Error('refs should be defined');
-    expect(JSON.stringify(data.assets[0].references[0].type)).toBe(
-      JSON.stringify({ policy: '00000000000000000000000000000000000000000000000000000000' }),
-    );
-
-    expect(error).toBeUndefined();
   });
 });
