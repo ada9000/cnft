@@ -33,7 +33,6 @@ export type References = {
   src: [string];
   // utility to help find payloads
   type: { policy: string } | { txhash: [string] };
-  target: string;
 };
 
 // File metadata - used to define more detailed files

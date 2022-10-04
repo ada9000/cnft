@@ -179,8 +179,9 @@ describe('refactor', () => {
     expect(data?.ext[0]).toBe('cip48');
 
     if (!data.assets[0].references) throw new Error('refs should be defined');
-    expect(data.assets[0].references[0].type).toBe('policy');
-    expect(data.assets[0].references[0].target).toBe('00000000000000000000000000000000000000000000000000000000');
+    expect(JSON.stringify(data.assets[0].references[0].type)).toBe(
+      JSON.stringify({ policy: '00000000000000000000000000000000000000000000000000000000' }),
+    );
 
     expect(error).toBeUndefined();
   });

@@ -106,6 +106,82 @@ export const findExtensions = (json: any): { ext: [string] | undefined; error: M
   return { ext, error };
 };
 
+export const handleCip48 = (
+  refs: References[],
+  assetName: string,
+  policyId: string,
+): {
+  references: References[] | undefined;
+  error: MetadataError | undefined;
+} => {
+  const references: References[] = [];
+  var error: MetadataError | undefined;
+
+  //const refs = ;
+  let foundRefForAsset = false;
+  // check each ref is valid
+  refs.forEach((ref: References) => {
+    if (ref.name === assetName) {
+      foundRefForAsset = true;
+    }
+
+    // check required properties exist
+    if (!ref.mediaType) {
+      error = {
+        type: MetadataErrors.cip48,
+        message: `CIP48 requires mediaType property. Asset '${assetName}' is missing mediaType`,
+      };
+      return { references, error };
+    }
+    if (!ref.src) {
+      error = {
+        type: MetadataErrors.cip48,
+        message: `CIP48 requires src property array. Asset '${assetName}' is missing src array`,
+      };
+      return { references, error };
+    }
+
+    // TODO: check valid types if defined
+    // set default type to current policy if not defined
+    if (!ref.type) {
+      ref.type = { policy: policyId };
+    }
+
+    // check valid src array
+    if (Array.isArray(ref.src)) {
+      ref.src.forEach((srcRef: string) => {
+        if (srcRef.length > 64) {
+          error = {
+            type: MetadataErrors.cip48,
+            message: `CIP48 asset '${assetName}' has a src element larger than 64 bytes '${srcRef}'`,
+          };
+          return { references, error };
+        }
+      });
+    } else {
+      error = {
+        type: MetadataErrors.cip48,
+        message: `CIP48 asset '${assetName} src type is not an array'`,
+      };
+      return { references, error };
+    }
+    if (error) {
+      return { references, error };
+    }
+    references.push(ref);
+  });
+
+  if (!foundRefForAsset) {
+    error = {
+      type: MetadataErrors.cip48,
+      message: `No reference name matches the asset name '${assetName}'. 
+    Ensure at least one 'refs' property contains a name tag that matches the asset name`,
+    };
+    return { references, error };
+  }
+  return { references, error };
+};
+
 // finds assets (aka NFTs) within a JSON object given a policyId
 /** @internal */
 export const findAssets = (
@@ -115,7 +191,7 @@ export const findAssets = (
 ): { assets: Asset[]; error: MetadataError | undefined } => {
   const assets: Asset[] = [];
   let error: MetadataError | undefined;
-  const references: References[] = [];
+  let references: References[] | undefined;
 
   const assetNames = Object.keys(json[721][policyId]);
   assetNames.forEach((assetName) => {
@@ -168,70 +244,15 @@ export const findAssets = (
     // handle cip48
     if (usingCip48) {
       if ('refs' in json[721][policyId][assetName]) {
-        const refs = json[721][policyId][assetName].refs;
-
-        let foundRefForAsset = false;
-        // check each ref is valid
-        refs.forEach((ref: References) => {
-          if (ref.name === assetName) {
-            foundRefForAsset = true;
-          }
-
-          // check required properties exist
-          if (!ref.mediaType) {
-            error = {
-              type: MetadataErrors.cip48,
-              message: `CIP48 requires mediaType property. Asset '${assetName}' is missing mediaType`,
-            };
-            return { assets, error };
-          }
-          if (!ref.src) {
-            error = {
-              type: MetadataErrors.cip48,
-              message: `CIP48 requires src property array. Asset '${assetName}' is missing src array`,
-            };
-            return { assets, error };
-          }
-
-          // TODO: check valid types if defined
-          // set default type to current policy if not defined
-          if (!ref.type) {
-            refs.type = 'policy';
-            refs.target = policyId;
-          }
-
-          // check valid src array
-          if (Array.isArray(ref.src)) {
-            ref.src.forEach((srcRef: string) => {
-              if (srcRef.length > 64) {
-                error = {
-                  type: MetadataErrors.cip48,
-                  message: `CIP48 asset '${assetName}' has a src element larger than 64 bytes '${srcRef}'`,
-                };
-                return { assets, error };
-              }
-            });
-          } else {
-            error = {
-              type: MetadataErrors.cip48,
-              message: `CIP48 asset '${assetName} src type is not an array'`,
-            };
-            return { assets, error };
-          }
-          if (error) {
-            return { assets, error };
-          }
-          references.push(refs);
-        });
-
-        if (!foundRefForAsset) {
-          error = {
-            type: MetadataErrors.cip48,
-            message: `No reference name matches the asset name '${assetName}'. 
-          Ensure at least one 'refs' property contains a name tag that matches the asset name`,
-          };
-          return { assets, error };
+        const { references: cip48Refs, error: cip48Error } = handleCip48(
+          json[721][policyId][assetName].refs,
+          assetName,
+          policyId,
+        );
+        if (cip48Error) {
+          return { assets, cip48Error };
         }
+        references = cip48Refs;
       } else {
         error = {
           type: MetadataErrors.cip48,
