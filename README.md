@@ -12,7 +12,15 @@ A package that parses Cardano NFT's
 
 ## Quickstart example
 
+install with yarn
+`yarn add parse-cnft`
+or npm
+`npm install parse-cnft`
+
 ```js
+import { ParseCNFT } from 'parse-cnft';
+import { Data } from 'parse-cnft/lib/types/types';
+
 const metadataJsonString = `{
     "721": {
         "ba3afde69bb939ae4439c36d220e6b2686c6d3091bbc763ac0a1679c": {
