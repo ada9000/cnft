@@ -35,3 +35,9 @@ describe('References and payloads', () => {
     expect(JSON.stringify(data.assets[2].references[0].src)).toBe(JSON.stringify(['r0', 'r1', 'r2', 'b', 'r3']));
   });
 });
+
+describe('References and payloads errors', () => {
+  it('Metadata with 3 reference is correct', () => {
+    expect(true).toBeTruthy(); //TODO
+  });
+});

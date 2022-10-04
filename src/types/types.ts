@@ -21,7 +21,7 @@ export type Asset = {
   description?: string;
   files?: [FileMetadata];
   other?: any;
-  nftType: NftTypes;
+  nftType: string;
   references?: References[];
 };
 
@@ -46,9 +46,8 @@ export type FileMetadata = {
 // The different types of nft data
 export enum NftTypes {
   onchain = 'on-chain', // data is stored on chain
-  offchain = 'off-chain', // data is found at a url
   ipfs = 'ipfs', // uses inter planetary file storage (IPFS)
-  immutable = 'ipfs', // uses some other immutable file storage
+  external = 'external', // nft image is based of external sources
   hybrid = 'hybrid', // ipfs and onchain
 }
 

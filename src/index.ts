@@ -4,7 +4,7 @@ import {
   validMetadataSize,
   contains721Metadatum,
   findPolicyId,
-  findAssets,
+  parseAssets,
   findVersion,
   findExtensions,
 } from './metadata/metadata';
@@ -65,7 +65,7 @@ export const ParseCNFT = (jsonStr: string): Metadata => {
   }
 
   // find assets
-  const { assets, error: assetError } = findAssets(json, policyId, ext);
+  const { assets, error: assetError } = parseAssets(json, policyId, ext);
   cnft.error = assetError;
   if (cnft.error) {
     return cnft;

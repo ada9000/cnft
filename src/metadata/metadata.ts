@@ -106,6 +106,31 @@ export const findExtensions = (json: any): { ext: [string] | undefined; error: M
   return { ext, error };
 };
 
+const validArrayProperty = (
+  errorType: MetadataErrors,
+  arrayProp: any,
+): {
+  error: MetadataError | undefined;
+} => {
+  let error: MetadataError | undefined;
+  if (Array.isArray(arrayProp)) {
+    arrayProp.forEach((element: string) => {
+      if (element.length > 64) {
+        error = {
+          type: errorType,
+          message: `Array element too large. Expected 64 chars or less got '${element.length}'`,
+        };
+      }
+    });
+  } else {
+    error = { type: errorType, message: `Expect array got '${typeof { arrayProp }}'` };
+    return { error };
+  }
+  return { error };
+};
+
+// experimental CIP48 usage
+/** @internal */
 export const handleCip48 = (
   refs: References[],
   assetName: string,
@@ -147,26 +172,10 @@ export const handleCip48 = (
       ref.type = { policy: policyId };
     }
 
+    const { error: arrayError } = validArrayProperty(MetadataErrors.cip48, ref.src);
     // check valid src array
-    if (Array.isArray(ref.src)) {
-      ref.src.forEach((srcRef: string) => {
-        if (srcRef.length > 64) {
-          error = {
-            type: MetadataErrors.cip48,
-            message: `CIP48 asset '${assetName}' has a src element larger than 64 bytes '${srcRef}'`,
-          };
-          return { references, error };
-        }
-      });
-    } else {
-      error = {
-        type: MetadataErrors.cip48,
-        message: `CIP48 asset '${assetName} src type is not an array'`,
-      };
-      return { references, error };
-    }
-    if (error) {
-      return { references, error };
+    if (arrayError) {
+      return { references, arrayError };
     }
     references.push(ref);
   });
@@ -182,9 +191,46 @@ export const handleCip48 = (
   return { references, error };
 };
 
+const parseFilesProperty = (
+  files: any[],
+): {
+  filesOnChain: boolean;
+  error: MetadataError | undefined;
+} => {
+  let filesOnChain = false;
+  let error: MetadataError | undefined;
+
+  files.forEach((f: FileMetadata) => {
+    if (!('name' in f)) {
+      error = { type: MetadataErrors.cip25, message: "It's recommended to include a name tag" };
+      return { filesOnChain, error };
+    }
+    if (!('src' in f)) {
+      error = { type: MetadataErrors.cip25, message: 'Files require a src tag' };
+      return { filesOnChain, error };
+    }
+    if (Array.isArray(f.src)) {
+      if (!('mediaType' in f)) {
+        filesOnChain = true;
+        error = { type: MetadataErrors.cip25, message: 'Files require a mediaType (that define mime type)' };
+        return { filesOnChain, error };
+      }
+
+      const { error: arrayError } = validArrayProperty(MetadataErrors.cip48, f.src);
+      if (arrayError) {
+        return { filesOnChain, arrayError };
+      }
+    } else if (!isValidUrl(f.src)) {
+      error = { type: MetadataErrors.cip25, message: 'Files src must be a valid url' };
+      return { filesOnChain, error };
+    }
+  });
+
+  return { filesOnChain, error };
+};
+
 // finds assets (aka NFTs) within a JSON object given a policyId
-/** @internal */
-export const findAssets = (
+export const parseAssets = (
   json: any,
   policyId: string,
   ext: [string] | undefined = undefined,
@@ -193,10 +239,12 @@ export const findAssets = (
   let error: MetadataError | undefined;
   let references: References[] | undefined;
 
+  let usesIpfs: boolean = false;
+  let usesChain: boolean = false;
+  let usesExternal: boolean = false;
+
   const assetNames = Object.keys(json[721][policyId]);
   assetNames.forEach((assetName) => {
-    let nftType = NftTypes.offchain;
-
     // CIP-0048 check
     const usingCip48 = ext?.includes('cip48');
 
@@ -226,19 +274,21 @@ export const findAssets = (
     const image = json[721][policyId][assetName].image;
 
     if (Array.isArray(image)) {
-      // handle on chain
-      nftType = NftTypes.onchain;
-
+      usesChain = true;
+      const { error: arrayError } = validArrayProperty(MetadataErrors.cip25, image);
+      if (arrayError) {
+        return { assets, arrayError };
+      }
       // if cant't resolve media type throw error
-      image.forEach((str: string) => {
-        if (str.length > 64) {
-          error = { type: MetadataErrors.cip25, message: 'image array elements must be 64 characters or less' };
-          return { assets, error };
-        }
-      });
+      if (!('mediaType' in json[721][policyId][assetName])) {
+        error = { type: MetadataErrors.cip25, message: 'Image property arrays require a mediaType prop' };
+        return { assets, error };
+      }
     } else if (isValidUrl(image)) {
       if (image.substr(0, 7) === 'ipfs://') {
-        nftType = NftTypes.ipfs;
+        usesIpfs = true;
+      } else {
+        usesExternal = true;
       }
     } else if (!usingCip48) {
       error = { type: MetadataErrors.cip25, message: 'Invalid image property' };
@@ -256,6 +306,7 @@ export const findAssets = (
         if (cip48Error) {
           return { assets, cip48Error };
         }
+        usesChain = true;
         references = cip48Refs;
       } else {
         error = {
@@ -268,27 +319,23 @@ export const findAssets = (
 
     // find file type
     if ('files' in json[721][policyId][assetName]) {
-      const files = json[721][policyId][assetName].files;
+      //const files = json[721][policyId][assetName].files;
+      const { filesOnChain, error: fileError } = parseFilesProperty(json[721][policyId][assetName].files);
+      usesChain = filesOnChain;
+      if (fileError) {
+        return { assets, fileError };
+      }
+    }
 
-      files.forEach((f: FileMetadata) => {
-        if (!('name' in f)) {
-          error = { type: MetadataErrors.cip25, message: "It's recommended to include a name tag" };
-          return { assets, error };
-        }
-        if (!('src' in f)) {
-          error = { type: MetadataErrors.cip25, message: 'Files require a src tag' };
-          return { assets, error };
-        }
-        if (Array.isArray(f.src)) {
-          if (!('mediaType' in f)) {
-            error = { type: MetadataErrors.cip25, message: 'Files require a mediaType (that define mime type)' };
-            return { assets, error };
-          }
-        } else if (!isValidUrl(f.src)) {
-          error = { type: MetadataErrors.cip25, message: 'Files src must be a valid url' };
-          return { assets, error };
-        }
-      });
+    // handle type
+    let nftType: string = NftTypes.external;
+    const usesOffChain = usesExternal || usesIpfs;
+    if (usesChain && usesOffChain) {
+      nftType = NftTypes.hybrid;
+    } else if (usesChain && !usesOffChain) {
+      nftType = NftTypes.onchain;
+    } else if (usesIpfs) {
+      nftType = NftTypes.ipfs;
     }
 
     // create CNFT_ASSET
@@ -300,7 +347,7 @@ export const findAssets = (
       description: json[721][policyId][assetName].description,
       files: json[721][policyId][assetName].files,
       other,
-      nftType: NftTypes.ipfs, // TODO
+      nftType,
       references,
     });
   });
