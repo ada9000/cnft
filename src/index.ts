@@ -10,7 +10,7 @@ import {
 } from './metadata/metadata';
 
 export const ParseCNFT = (jsonStr: string): Metadata => {
-  const cnft: Metadata = { data: null, error: null };
+  const cnft: Metadata = { data: undefined, error: undefined };
 
   // check json is valid
   const { json, error: jsonError } = validJson(jsonStr);
@@ -19,8 +19,8 @@ export const ParseCNFT = (jsonStr: string): Metadata => {
     return cnft;
   }
 
-  // check if json is null, return an error if so
-  if (json === null) {
+  // check if json is undefined, return an error if so
+  if (json === undefined) {
     cnft.error = { type: MetadataErrors.json, message: 'Empty json' };
     return cnft;
   }
@@ -44,8 +44,8 @@ export const ParseCNFT = (jsonStr: string): Metadata => {
     return cnft;
   }
 
-  // if policy is null return
-  if (policyId === null) {
+  // if policy is undefined return
+  if (policyId === undefined) {
     cnft.error = { type: MetadataErrors.cip25, message: 'No policy defined' };
     return cnft;
   }

@@ -12,29 +12,29 @@ import { isValidUrl } from '../utils/utils';
 
 // checks json object is not larger than the metadata size limit (note disk size can vary due to whitespace)
 /** @internal */
-export const validMetadataSize = (json: JSON): MetadataError | null => {
+export const validMetadataSize = (json: JSON): MetadataError | undefined => {
   const maxTxSize = 16384; // bytes
   const bytes = new TextEncoder().encode(JSON.stringify(json)).length;
   if (bytes > maxTxSize) {
     return { type: MetadataErrors.cip25, message: `Metadata size is '${bytes}' maxTxSize is '${maxTxSize}'` };
   }
-  return null;
+  return undefined;
 };
 
 // checks json object contains a the 721 tag
 /** @internal */
-export const contains721Metadatum = (json: JSON): MetadataError | null => {
+export const contains721Metadatum = (json: JSON): MetadataError | undefined => {
   if (!('721' in json)) {
     return { type: MetadataErrors.cip25, message: 'Missing 721 metadatum tag' };
   }
-  return null;
+  return undefined;
 };
 
 // find and return the policy ID
 /** @internal */
-export const findPolicyId = (json: any): { policyId: string | null; error: MetadataError | null } => {
-  let policyId: string | null = null;
-  let error: MetadataError | null = null;
+export const findPolicyId = (json: any): { policyId: string | undefined; error: MetadataError | undefined } => {
+  let policyId: string | undefined = undefined;
+  let error: MetadataError | undefined = undefined;
   // filter out other root level properties such as version etc
   const root721Tags = ['version', 'ext'];
   const policyIds = Object.keys(json[721]).filter((item) => !root721Tags.includes(item));
@@ -52,9 +52,9 @@ export const findPolicyId = (json: any): { policyId: string | null; error: Metad
 
 // find and return version if it exists
 /** @internal */
-export const findVersion = (json: any): { version: number | undefined; error: MetadataError | null } => {
+export const findVersion = (json: any): { version: number | undefined; error: MetadataError | undefined } => {
   let version: number | undefined;
-  let error: MetadataError | null = null;
+  let error: MetadataError | undefined = undefined;
 
   const root721Tags = Object.keys(json[721]);
   // check there is only one policy
@@ -77,9 +77,9 @@ export const findVersion = (json: any): { version: number | undefined; error: Me
 
 // find and return extensions if they exists
 /** @internal */
-export const findExtensions = (json: any): { ext: [string] | undefined; error: MetadataError | null } => {
+export const findExtensions = (json: any): { ext: [string] | undefined; error: MetadataError | undefined } => {
   let ext: [string] | undefined;
-  let error: MetadataError | null = null;
+  let error: MetadataError | undefined = undefined;
   const root721Tags = Object.keys(json[721]);
   // check there is only one policy
   if (root721Tags.includes('ext')) {
@@ -111,10 +111,10 @@ export const findExtensions = (json: any): { ext: [string] | undefined; error: M
 export const findAssets = (
   json: any,
   policyId: string,
-  ext: [string] | null = null,
-): { assets: Asset[]; error: MetadataError | null } => {
+  ext: [string] | undefined = undefined,
+): { assets: Asset[]; error: MetadataError | undefined } => {
   const assets: Asset[] = [];
-  let error: MetadataError | null = null;
+  let error: MetadataError | undefined = undefined;
   let references: References[] = [];
 
   const assetNames = Object.keys(json[721][policyId]);
@@ -271,11 +271,12 @@ export const findAssets = (
     // create CNFT_ASSET
     assets.push({
       assetName,
-      name: 'name' in json[721][policyId][assetName] ? json[721][policyId][assetName].name : null,
+      name: 'name' in json[721][policyId][assetName] ? json[721][policyId][assetName].name : undefined,
       image,
-      mediaType: 'mediaType' in json[721][policyId][assetName] ? json[721][policyId][assetName].mediaType : null,
-      description: 'description' in json[721][policyId][assetName] ? json[721][policyId][assetName].description : null,
-      files: 'files' in json[721][policyId][assetName] ? json[721][policyId][assetName].files : null,
+      mediaType: 'mediaType' in json[721][policyId][assetName] ? json[721][policyId][assetName].mediaType : undefined,
+      description:
+        'description' in json[721][policyId][assetName] ? json[721][policyId][assetName].description : undefined,
+      files: 'files' in json[721][policyId][assetName] ? json[721][policyId][assetName].files : undefined,
       other,
       nftType: NftTypes.ipfs, // TODO
       references,

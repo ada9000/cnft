@@ -5,11 +5,11 @@ import { MetadataError, MetadataErrors } from '../types/types';
 export const validJson = (
   jsonStr: string,
 ): {
-  json: JSON | null;
-  error: MetadataError | null;
+  json: JSON | undefined;
+  error: MetadataError | undefined;
 } => {
-  let json: JSON | null = null;
-  let error: MetadataError | null = null;
+  let json: JSON | undefined = undefined;
+  let error: MetadataError | undefined = undefined;
   try {
     json = JSON.parse(jsonStr);
   } catch (e) {

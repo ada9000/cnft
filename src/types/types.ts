@@ -1,7 +1,7 @@
 // Metadata
 export type Metadata = {
-  data: Data | null;
-  error: MetadataError | null;
+  data: Data | undefined;
+  error: MetadataError | undefined;
 };
 
 // Metadata data

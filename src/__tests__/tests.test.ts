@@ -53,7 +53,7 @@ describe('NFT 721 tag tests', () => {
       },
     };
     const { error } = ParseCNFT(JSON.stringify(mockedNFT));
-    expect(error).toBeNull();
+    expect(error).toBeUndefined();
   });
 
   it('Non 721 metadatum tag throws CIP error', () => {
@@ -123,13 +123,13 @@ describe('Handle nft metadata sizes', () => {
     const mockedNFT = require('./__mocks__/diffSizeNfts/maxTxSizeNFT.json');
     const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
     // TODO: add error types
-    expect(error?.message).toBe(null || undefined);
+    expect(error?.message).toBe(undefined || undefined);
   });
   it('metadata is too large generates error', () => {
     const mockedNFT = require('./__mocks__/diffSizeNfts/lessThanMaxTxSizeNFT.json');
     const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
     // TODO: add error types
-    expect(error?.message).toBe(null || undefined); //TODO: this should not be null or undefined
+    expect(error?.message).toBe(undefined || undefined); //TODO: this should not be undefined or undefined
   });
 });
 
@@ -155,7 +155,7 @@ describe('Handle "ext" tag (extensions)', () => {
       },
     };
     const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
-    expect(error).toBeNull();
+    expect(error).toBeUndefined();
     if (!data?.ext) {
       throw new Error('ext should be defined');
     }
