@@ -53,13 +53,17 @@ export const findPolicyId = (json: any): { policyId: string | null; error: Metad
 // find and return version if it exists
 /** @internal */
 export const findVersion = (json: any): { version: number | undefined; error: MetadataError | null } => {
-  let version: number | undefined = undefined;
+  let version: number | undefined;
   let error: MetadataError | null = null;
+
   const root721Tags = Object.keys(json[721]);
   // check there is only one policy
   if (root721Tags.includes('version')) {
     if (Object.values(NftVersions).includes(json[721].version)) {
-      return { version, error };
+      if (Number.isInteger(json[721].version)) {
+        version = json[721].version;
+        return { version, error };
+      }
     } else {
       error = {
         type: MetadataErrors.cip25,
@@ -74,7 +78,7 @@ export const findVersion = (json: any): { version: number | undefined; error: Me
 // find and return extensions if they exists
 /** @internal */
 export const findExtensions = (json: any): { ext: [string] | undefined; error: MetadataError | null } => {
-  let ext: [string] | undefined = undefined;
+  let ext: [string] | undefined;
   let error: MetadataError | null = null;
   const root721Tags = Object.keys(json[721]);
   // check there is only one policy
@@ -97,7 +101,6 @@ export const findExtensions = (json: any): { ext: [string] | undefined; error: M
         return { ext, error };
       }
     });
-    //console.error(json[721].ext);
     ext = json[721].ext;
   }
   return { ext, error };
@@ -112,7 +115,7 @@ export const findAssets = (
 ): { assets: Asset[]; error: MetadataError | null } => {
   const assets: Asset[] = [];
   let error: MetadataError | null = null;
-  let references: [References] | undefined = undefined;
+  let references: References[] = [];
 
   const assetNames = Object.keys(json[721][policyId]);
   assetNames.forEach((assetName) => {
@@ -190,13 +193,14 @@ export const findAssets = (
             return { assets, error };
           }
 
-          //TODO: check valid types if defined
-
+          // TODO: check valid types if defined
           // set default type to current policy if not defined
           if (!ref.type) {
             refs.type = 'policy';
             refs.target = policyId;
+            console.log('set ref types <-------');
           }
+
           // check valid src array
           if (Array.isArray(ref.src)) {
             ref.src.forEach((srcRef: string) => {
@@ -218,6 +222,8 @@ export const findAssets = (
           if (error) {
             return { assets, error };
           }
+          console.log(refs);
+          references.push(refs);
         });
 
         if (!foundRefForAsset) {

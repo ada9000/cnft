@@ -1,4 +1,3 @@
-import { version } from 'prettier';
 import { Metadata, Asset, MetadataErrors, NftTypes, FileMetadata, MetadataError } from './types/types';
 import { validJson, isValidUrl } from './utils/utils';
 import {

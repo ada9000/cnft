@@ -175,10 +175,13 @@ describe('refactor', () => {
     const mockedNFT = require('./__mocks__/referenceAndPayloads/ext48.json');
     console.log(JSON.stringify(mockedNFT));
     const { data, error } = ParseCNFT(JSON.stringify(mockedNFT));
-    console.log(error);
-    if (!data?.ext) {
-      throw new Error('ext should be defined');
-    }
+    if (!data?.ext) throw new Error('ext should be defined');
     expect(data?.ext[0]).toBe('cip48');
+
+    if (!data.assets[0].references) throw new Error('refs should be defined');
+    expect(data.assets[0].references[0].type).toBe('policy');
+    expect(data.assets[0].references[0].target).toBe('00000000000000000000000000000000000000000000000000000000');
+
+    expect(error).toBeUndefined();
   });
 });

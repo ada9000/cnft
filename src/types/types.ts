@@ -22,7 +22,7 @@ export type Asset = {
   files?: [FileMetadata];
   other?: any;
   nftType: NftTypes;
-  references?: [References];
+  references?: References[];
 };
 
 // on-chain reference
