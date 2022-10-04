@@ -33,8 +33,8 @@ export const contains721Metadatum = (json: JSON): MetadataError | undefined => {
 // find and return the policy ID
 /** @internal */
 export const findPolicyId = (json: any): { policyId: string | undefined; error: MetadataError | undefined } => {
-  let policyId: string | undefined = undefined;
-  let error: MetadataError | undefined = undefined;
+  let policyId: string | undefined;
+  let error: MetadataError | undefined;
   // filter out other root level properties such as version etc
   const root721Tags = ['version', 'ext'];
   const policyIds = Object.keys(json[721]).filter((item) => !root721Tags.includes(item));
@@ -54,7 +54,7 @@ export const findPolicyId = (json: any): { policyId: string | undefined; error: 
 /** @internal */
 export const findVersion = (json: any): { version: number | undefined; error: MetadataError | undefined } => {
   let version: number | undefined;
-  let error: MetadataError | undefined = undefined;
+  let error: MetadataError | undefined;
 
   const root721Tags = Object.keys(json[721]);
   // check there is only one policy
@@ -79,7 +79,7 @@ export const findVersion = (json: any): { version: number | undefined; error: Me
 /** @internal */
 export const findExtensions = (json: any): { ext: [string] | undefined; error: MetadataError | undefined } => {
   let ext: [string] | undefined;
-  let error: MetadataError | undefined = undefined;
+  let error: MetadataError | undefined;
   const root721Tags = Object.keys(json[721]);
   // check there is only one policy
   if (root721Tags.includes('ext')) {
@@ -114,8 +114,8 @@ export const findAssets = (
   ext: [string] | undefined = undefined,
 ): { assets: Asset[]; error: MetadataError | undefined } => {
   const assets: Asset[] = [];
-  let error: MetadataError | undefined = undefined;
-  let references: References[] = [];
+  let error: MetadataError | undefined;
+  const references: References[] = [];
 
   const assetNames = Object.keys(json[721][policyId]);
   assetNames.forEach((assetName) => {
@@ -198,7 +198,6 @@ export const findAssets = (
           if (!ref.type) {
             refs.type = 'policy';
             refs.target = policyId;
-            console.log('set ref types <-------');
           }
 
           // check valid src array
@@ -222,7 +221,6 @@ export const findAssets = (
           if (error) {
             return { assets, error };
           }
-          console.log(refs);
           references.push(refs);
         });
 
@@ -271,12 +269,11 @@ export const findAssets = (
     // create CNFT_ASSET
     assets.push({
       assetName,
-      name: 'name' in json[721][policyId][assetName] ? json[721][policyId][assetName].name : undefined,
+      name: json[721][policyId][assetName].name,
       image,
-      mediaType: 'mediaType' in json[721][policyId][assetName] ? json[721][policyId][assetName].mediaType : undefined,
-      description:
-        'description' in json[721][policyId][assetName] ? json[721][policyId][assetName].description : undefined,
-      files: 'files' in json[721][policyId][assetName] ? json[721][policyId][assetName].files : undefined,
+      mediaType: json[721][policyId][assetName].mediaType,
+      description: json[721][policyId][assetName].description,
+      files: json[721][policyId][assetName].files,
       other,
       nftType: NftTypes.ipfs, // TODO
       references,

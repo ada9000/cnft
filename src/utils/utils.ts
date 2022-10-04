@@ -8,8 +8,8 @@ export const validJson = (
   json: JSON | undefined;
   error: MetadataError | undefined;
 } => {
-  let json: JSON | undefined = undefined;
-  let error: MetadataError | undefined = undefined;
+  let json: JSON | undefined;
+  let error: MetadataError | undefined;
   try {
     json = JSON.parse(jsonStr);
   } catch (e) {
