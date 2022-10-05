@@ -18,7 +18,7 @@ or npm
 `npm install parse-cnft`
 
 ```js
-import { ParseCNFT } from 'parse-cnft';
+import { cnft } from 'parse-cnft';
 import { Data } from 'parse-cnft/lib/types/types';
 
 const metadataJsonString = `{
@@ -33,7 +33,7 @@ const metadataJsonString = `{
         }
     }
 }`;
-const { data, errors } = ParseCNFT(metadataJsonString);
+const { data, errors } = cnft(metadataJsonString);
 console.log(data?.policyId); // logs: ba3afde69bb939ae4439c36d220e6b2686c6d3091bbc763ac0a1679c
 console.log(data?.assets[0].name); // logs: bit_bot 0x0000
 ```

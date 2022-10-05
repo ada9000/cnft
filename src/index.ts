@@ -1,4 +1,4 @@
-import { Metadata, Asset, MetadataErrors, NftTypes, FileMetadata, MetadataError } from './types/types';
+import { Metadata, Asset, MetadataErrors, NftTypes, FileMetadata, MetadataError, Data } from './types/types';
 import { validJson, isValidUrl } from './utils/utils';
 import {
   validMetadataSize,
@@ -8,6 +8,8 @@ import {
   findVersion,
   findExtensions,
 } from './metadata/metadata';
+
+export { Metadata, Data }; //?
 
 export const ParseCNFT = (jsonStr: string): Metadata => {
   const cnft: Metadata = { data: undefined, error: undefined };
