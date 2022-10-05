@@ -1,4 +1,4 @@
-# Parse CNFT
+# CNFT (tools)
 
 A package that parses Cardano NFT's
 
@@ -18,7 +18,7 @@ or npm
 `npm install parse-cnft`
 
 ```js
-import { cnft } from 'parse-cnft';
+import { ParseCNFT } from 'parse-cnft';
 import { Data } from 'parse-cnft/lib/types/types';
 
 const metadataJsonString = `{
@@ -46,3 +46,9 @@ console.log(data?.assets[0].name); // logs: bit_bot 0x0000
 4. `npm run format`
 5. `npm run lint`
 6. Create a PR
+
+## Plans
+
+- [x] Parse 721 meta data
+- [] Validate mime types?
+- [] Chain multiple metadata for onchain reference (Depends on CIP48)
